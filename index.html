@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Bancada Virtual Parker</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=1920 height=1080></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+      <div id="unity-warning"> </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.19.1/firebase-database.js"></script>
+
+    <script type="module">
+      const firebaseConfig = {
+        apiKey: "AIzaSyB0eN2Kd1KRPBCnbljZqaYhVOmOb_0t3Rg",
+        authDomain: "missim-4cc1d.firebaseapp.com",
+        databaseURL: "https://missim-4cc1d-default-rtdb.firebaseio.com",
+        projectId: "missim-4cc1d",
+        storageBucket: "missim-4cc1d.firebasestorage.app",
+        messagingSenderId: "106205839554",
+        appId: "1:106205839554:web:a8d3d03f5d1691f21b7b5b",
+        measurementId: "G-CNL8HRFJZZ"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <script>
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var warningBanner = document.querySelector("#unity-warning");
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/parkervirtualtraining_free_test.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/parkervirtualtraining_free_test.data.br",
+        frameworkUrl: buildUrl + "/parkervirtualtraining_free_test.framework.js.br",
+        codeUrl: buildUrl + "/parkervirtualtraining_free_test.wasm.br",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "MISSIM",
+        productName: "Bancada Virtual Parker",
+        productVersion: "1.0.3",
+        showBanner: unityShowBanner,
+      };
+
+      // By default Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        container.className = "unity-mobile";
+
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
+
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+
+        // unityShowBanner('WebGL builds are not supported on mobile devices.');
+      } else {
+        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+
+        canvas.style.width = "99vw";
+        canvas.style.height = "99vh";
+      }
+
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+        window.unityInstance = unityInstance;
+          loadingBar.style.display = "none";
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
+
+    
+    <script>
+      // Wait for Unity loader to finish
+      window.addEventListener("resize", () => {
+        const canvas = document.querySelector("#unity-canvas");
+        if (canvas) {
+          resizeUnityCanvas(canvas);
+        }
+      });
+
+      function resizeUnityCanvas(canvas) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // Update the canvas size
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+
+        // Optional: if you’re using Unity 2021+ with WebGL 2.0, this helps Unity know the new size
+        if (typeof unityInstance !== "undefined" && unityInstance.Module) {
+          unityInstance.Module.canvas.width = width;
+          unityInstance.Module.canvas.height = height;
+        }
+      }
+
+      // Trigger initial resize
+      window.addEventListener("load", () => {
+        const canvas = document.querySelector("#unity-canvas");
+        if (canvas) resizeUnityCanvas(canvas);
+      });
+    </script>
+  </body>
+</html>
